@@ -84,13 +84,14 @@ df
 # In[8]:
 
 
-summ=df[['fw_name', 'rev_name', 'pl_name', 'pl_pos']].groupby(['fw_name', 'rev_name', 'pl_name']).agg( ['count','mean'])
+summ=df[['fw_name', 'rev_name', 'pl_name', 'pl_pos']].groupby(['fw_name', 'rev_name', 'pl_name'], as_index=False).agg( ['count','mean'])
 
+summ.columns = ['fw_name','rev_name','pl_name','count','mean']
 
 # In[9]:
 
 
-summ.to_csv("Jake05_S101_L001_R_001.csv", sep=',')
+summ.to_csv("results.csv", sep=',')
 
 
 # In[10]:
