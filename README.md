@@ -4,30 +4,35 @@ For identifying plasmid IDs and deconvoluting PCR1 barcodes in plasmid ID sequen
 
 ## Setup
 
-### Install `vsearch`
+### Install `miniforge3`
 
-First install `vsearch` according to the [install documentation](https://github.com/torognes/vsearch#download-and-install) for your particular operating system.
+The easiest way to install the necessary dependencies for this workflow is to use [Miniforge3](https://conda-forge.org/miniforge/). Download and installation instructions can be found [here](https://github.com/conda-forge/miniforge#download).
 
-### Install Python dependencies
+### Create a `conda` environment and install packages
 
-To manage Python dependencies, it is recommended to use Python virtual environments, which is the method used below. `conda` or other Python package managers may also be used if preferred.
-
-The following commands create a virtual environment, activate the environment, and install the necessary Python packages.
+Assuming you have installed and configured `miniforge3` correctly, you can create an environment with the necessary dependencies using a single command:
 
 ```bash
-python -m venv plasmid_env
-source plasmid_env/bin/activate
-pip install --upgrade pip
-pip install -r requirements.txt
+conda env create -n plasmid -c conda-forge -c bioconda vsearch numpy pandas biopython
 ```
 
-You are now ready to run the workflow.
+Or you can create the environment using the `environment.yml` file included in this repository:
+
+```bash
+conda env create -n plasmid -f environment.yml
+```
 
 ## Running the workflow
 
+### Activate the `conda` environment
+
+```bash
+conda activate plasmid
+```
+
 ### Merging paired end reads with `vsearch`
 
-The workflow assumes you have paired-end reads for each sequencing sample that you wish to deconvolute. This step is accomplished using the `merge.sh` script. Running the script without any options will produce the help menu.
+The workflow assumes you have paired-end reads for each sequencing sample that you wish to deconvolute. Merging of paired-end reads is done with `vsearch` via the `merge.sh` script. Running the script without any options will produce the help menu.
 
 ```bash
 ./merge.sh

@@ -1,4 +1,4 @@
 *.fastq.gz
 Jake05_S101_L001_R_001.csv
 distances_merge.txt
-barcode_env
+results.csv
