@@ -1,9 +1,5 @@
 #!/bin/bash
 
-#source /mmfs1/projects/nicholas.dusek/opt/miniconda3/bin/activate vsearch
-#module use /mmfs1/projects/barney.geddes/software/modulefiles
-#module load vsearch
-
 if [ $# -ne 2 ]; then
 	echo "USAGE: $0 R1.fastq.gz R2.fastq.gz"
 	exit 1
