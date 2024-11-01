@@ -1,4 +1,3 @@
 *.fastq.gz
-Jake05_S101_L001_R_001.csv
-distances_merge.txt
-results.csv
+*_distances_merge.txt
+*_results.csv
