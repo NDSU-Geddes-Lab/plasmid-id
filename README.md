@@ -44,12 +44,36 @@ USAGE: ./merge.sh R1.fastq.gz R2.fastq.gz
 
 You will have to run the script once for each pair of reads (i.e. once per sample) and the output will be a single `<sample_name>.merged.fastq.gz` file ready for processing with the Python script.
 
-### Identifying and counting barcodes
+### Identifying and counting barcodes with `plasmid_ID.py`
 
+The `plasmid_ID.py` script takes a single argument - the reads to analyze – and produces an output CSV file with the count of each barcode identified. Running the script with the `-h` flag will show the help menu.
 
+```bash
+./plasmid_ID.py -h
+```
 
+```
+usage: plasmid_ID.py [-h] seqfile
 
+Identifies plasmid ID barcodes in sequence reads
 
+positional arguments:
+  seqfile     reads.fastq.gz
 
+options:
+  -h, --help  show this help message and exit
+```
 
+For example, to process a merged sequence file from the previous step:
+
+```bash
+./plasmid_ID.py sample1.merged.fastq.gz
+```
+
+If successful, the script will not produce any text output, but you should see two new files created:
+
+```
+sample1_distances_merge.txt
+sample1_results.csv
+```
 
