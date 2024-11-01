@@ -30,7 +30,7 @@ reverse_dict = {k:str(v.seq.reverse_complement()) for k, v in reverse_dict.items
 
 
 plasmids = {}
-with open('Plasmid_ID_correct_position_jake_rcbc100.csv', 'r') as csvfile:
+with open('rcbc100.csv', 'r') as csvfile:
     table_reader = csv.DictReader(csvfile, delimiter=',', quotechar='"')
     for row in table_reader:
         plasmids[row["Barcode name"]]= row["ID plasmid sequence"]
