@@ -9,21 +9,20 @@ R1=$1
 R2=$2
 
 # Extract sample names
-S1=$(echo $R1 | cut -d_ -f1)
-S2=$(echo $R2 | cut -d_ -f1)
+S1=$(echo $R1 | cut -d. -f1)
+#S2=$(echo $R2 | cut -d_ -f1)
 
-if [ ! $S1 == $S2 ]; then
-	echo "Sample names do not match!"
-	exit 1
-fi
+#if [ ! $S1 == $S2 ]; then
+#	echo "Sample names do not match!"
+#	exit 1
+#fi
 
-OUT=$S1.merged.fastq
-
+# Merge reads
 vsearch --fastq_mergepairs $R1 \
 		--reverse $R2 \
-		--fastqout $OUT \
+		--fastqout ${S1}.merged.fastq \
 		--fastq_allowmergestagger
 		#--threads $NCPUS
 
-gzip $OUT
+gzip ${S1}.merged.fastq
 

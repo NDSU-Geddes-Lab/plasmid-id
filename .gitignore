@@ -1,3 +1,7 @@
 *.fastq.gz
+*.fastq
 *_distances_merge.txt
 *_results.csv
+clean.sh
+count.sh
+reads/

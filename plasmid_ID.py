@@ -69,5 +69,5 @@ summ=df[['fw_name', 'rev_name', 'pl_name', 'pl_pos']].groupby(['fw_name', 'rev_n
 summ.columns = ['fw_name','rev_name','pl_name','count','mean']
 
 outfile = sample_name + "_results.csv"
-summ.to_csv(outfile, sep=',')
+summ.to_csv(outfile, sep=',', index=False)
 
