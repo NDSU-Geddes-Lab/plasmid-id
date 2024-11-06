@@ -14,18 +14,35 @@ parser = argparse.ArgumentParser(
                     description='Identifies plasmid ID barcodes in sequence reads')
 
 parser.add_argument('seqfile', help='reads.fastq.gz')
+parser.add_argument('-b', '--barcodes',
+                    help='CSV file with barcode names and sequences',
+                    default='rcbc100.csv')
+parser.add_argument('-f', '--fw-primers',
+                    help='FASTA file with forward primers',
+                    default='FW_primers.fa')
+parser.add_argument('-r', '--rv-primers',
+                    help='FASTA file with reverse primers',
+                    default='RV_primers.fa')
+
 args = parser.parse_args()
 
+#print(args.seqfile)
+#print(args.barcodes)
+#print(args.fw_primers)
+#print(args.rv_primers)
+
+#quit()
+
 # Here we read all the sequence indeces for the forward and reverse reads
-forward_dict = SeqIO.to_dict(SeqIO.parse("FW_primers.fa", "fasta"))
+forward_dict = SeqIO.to_dict(SeqIO.parse(args.fw_primers, "fasta"))
 forward_dict = {k:str(v.seq) for k, v in forward_dict.items()}
-reverse_dict = SeqIO.to_dict(SeqIO.parse("RV_primers.fa", "fasta"))
+reverse_dict = SeqIO.to_dict(SeqIO.parse(args.rv_primers, "fasta"))
 reverse_dict = {k:str(v.seq.reverse_complement()) for k, v in reverse_dict.items()}
 
 
 # Now, we read all the plasmid sequences
 plasmids = {}
-with open('rcbc100.csv', 'r') as csvfile:
+with open(args.barcodes, 'r') as csvfile:
     table_reader = csv.DictReader(csvfile, delimiter=',', quotechar='"')
     for row in table_reader:
         plasmids[row["Barcode name"]]= row["ID plasmid sequence"]
@@ -56,7 +73,6 @@ with gzip.open(args.seqfile, "rt") as r1:
     
 colnames=['fw_name','fw_pos','rev_name','rev_pos','pl_name','pl_pos']
 df = pd.DataFrame(rows, columns=colnames)
-df.to_csv('distances_merge.csv', sep=',', index=False)
 
 summ=df[['fw_name', 'rev_name', 'pl_name', 'pl_pos']].groupby(['fw_name', 'rev_name', 'pl_name'], as_index=False).agg( ['count','mean'])
 
