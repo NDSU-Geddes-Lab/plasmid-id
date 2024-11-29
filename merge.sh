@@ -8,14 +8,14 @@ fi
 R1=$1
 R2=$2
 
-# Extract sample names
-S1=$(echo $R1 | cut -d. -f1)
-#S2=$(echo $R2 | cut -d_ -f1)
+# Extract sample names and verify that they match
+S1=$(echo $R1 | sed -e 's/_R1_.*fastq.gz//')
+S2=$(echo $R2 | sed -e 's/_R2_.*fastq.gz//')
 
-#if [ ! $S1 == $S2 ]; then
-#	echo "Sample names do not match!"
-#	exit 1
-#fi
+if [ ! $S1 == $S2 ]; then
+	echo "Sample names do not match!"
+	exit 1
+fi
 
 # Merge reads
 vsearch --fastq_mergepairs $R1 \
