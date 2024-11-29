@@ -77,3 +77,7 @@ sample1_distances_merge.txt
 sample1_results.csv
 ```
 
+### License information
+
+This repository contains code from [marcelamendoza/Plasmid-ID](https://github.com/marcelamendoza/Plasmid-ID) in accordance with the [MIT license](https://github.com/marcelamendoza/Plasmid-ID?tab=MIT-1-ov-file#readme), Copyright (c) 2018 marcelamendoza.
+
