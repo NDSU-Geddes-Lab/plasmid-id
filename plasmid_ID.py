@@ -76,7 +76,7 @@ df = pd.DataFrame(rows, columns=colnames)
 
 summ=df[['fw_name', 'rev_name', 'pl_name', 'pl_pos']].groupby(['fw_name', 'rev_name', 'pl_name'], as_index=False).agg( ['count','mean'])
 
-summ.columns = ['fw_name','rev_name','pl_name','count','mean']
+summ.columns = ['fw_name','rev_name','pl_name','count','mean_pos']
 
 sample_name = args.seqfile.split('.')[0]
 outfile = sample_name + "_results.csv"
