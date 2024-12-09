@@ -8,6 +8,8 @@ fi
 R1=$1
 R2=$2
 
+echo "Merging $R1 and $R2"
+
 # Extract sample names and verify that they match
 S1=$(echo $R1 | sed -e 's/_R1_.*fastq.gz//')
 S2=$(echo $R2 | sed -e 's/_R2_.*fastq.gz//')
@@ -25,4 +27,6 @@ vsearch --fastq_mergepairs $R1 \
 		#--threads $NCPUS
 
 gzip ${S1}.merged.fastq
+
+echo ""
 
