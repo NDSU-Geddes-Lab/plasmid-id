@@ -39,6 +39,13 @@ reverse_dict = {k:str(v.seq.reverse_complement()) for k, v in reverse_dict.items
 
 # Create a dictionary to store each identified barcode
 barcodes = {}
+for row in forward_dict.keys():
+    for col in reverse_dict.keys():
+        well = col+row
+        barcodes[well] = {}
+
+#print(barcodes)
+#quit()
 
 def find_barcode_and_well(seq, fwd_primers, rev_primers):
     """Iterate through forward and reverse primer pairs
@@ -52,15 +59,23 @@ def find_barcode_and_well(seq, fwd_primers, rev_primers):
                 return(col+row, hit.group(1))
     return(None, None)
 
-rows = []
+# Main loop to iterate through each fastq sequence
 with gzip.open(args.seqfile, "rt") as r1:
     for fw in SeqIO.parse(r1, "fastq") :
         str_seq = str(fw.seq)
         well, barcode = find_barcode_and_well(str_seq, forward_dict, reverse_dict)
-        if well is not None:
-            print(f"{well} {barcode}")
-        #tmp = (fw_name, int(fw_pos), rv_name, int(rv_pos), pl_name, int(pl_pos))
-        #rows.append(tmp)
+        # If well is None, that means no barcode was found
+        if well is None:
+            continue
+        # If we haven't seen this barcode in this well, then we set count to 1
+        elif barcode not in barcodes[well]:
+            barcodes[well][barcode] = 1
+        # If we've seen it already in that well, then increment the count
+        else:
+            barcodes[well][barcode] += 1
+        #print(f"{well} {barcode}")
+
+print(barcodes["A1"])
     
 #colnames=['fw_name','fw_pos','rev_name','rev_pos','pl_name','pl_pos']
 #df = pd.DataFrame(rows, columns=colnames)
