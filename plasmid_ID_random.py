@@ -32,8 +32,8 @@ reverse_dict = {k:str(v.seq.reverse_complement()) for k, v in reverse_dict.items
 
 # Create a dictionary to store each identified barcode
 barcodes = {}
-for row in forward_dict.keys():
-    for col in reverse_dict.keys():
+for col in reverse_dict.keys():
+    for row in forward_dict.keys():
         well = col+row
         barcodes[well] = {}
 
@@ -70,6 +70,8 @@ with gzip.open(args.seqfile, "rt") as r1:
 sample_name = args.seqfile.split('.')[0]
 outfile = sample_name + "_barcodes.csv"
 results = pd.DataFrame.from_dict(barcodes).fillna(0).astype('int')
+n_barcodes = len(results)
 #print(results)
 results.to_csv(outfile)
+print(f"Wrote counts for {n_barcodes} unique barcodes to {outfile}")
 
