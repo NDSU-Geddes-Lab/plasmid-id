@@ -2,6 +2,7 @@
 *.fastq
 *_distances_merge.txt
 *_results.csv
+*_barcodes.csv
 clean.sh
 count.sh
 reads/
