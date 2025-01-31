@@ -3,6 +3,7 @@
 *_distances_merge.txt
 *_results.csv
 *_barcodes.csv
+*.bak
 clean.sh
 count.sh
 reads/

@@ -24,14 +24,7 @@ parser.add_argument('-r', '--rv-primers',
 
 args = parser.parse_args()
 
-#print(args.seqfile)
-#print(args.barcodes)
-#print(args.fw_primers)
-#print(args.rv_primers)
-
-#quit()
-
-# Here we read all the sequence indeces for the forward and reverse reads
+# Reead in forward and reverse primer sequences
 forward_dict = SeqIO.to_dict(SeqIO.parse(args.fw_primers, "fasta"))
 forward_dict = {k:str(v.seq) for k, v in forward_dict.items()}
 reverse_dict = SeqIO.to_dict(SeqIO.parse(args.rv_primers, "fasta"))
@@ -44,15 +37,14 @@ for row in forward_dict.keys():
         well = col+row
         barcodes[well] = {}
 
-#print(barcodes)
-#quit()
-
+# Identify well and barcode all at once
 def find_barcode_and_well(seq, fwd_primers, rev_primers):
     """Iterate through forward and reverse primer pairs
     and identify well and barcode.
     """
     for row, fwd_seq in fwd_primers.items():
         for col, rev_seq in rev_primers.items():
+            # Read architecture: {fwd}{N33}{rev}
             pattern = fwd_seq + "(.{33})" + rev_seq
             hit = re.search(pattern, seq)
             if hit is not None:
@@ -73,18 +65,11 @@ with gzip.open(args.seqfile, "rt") as r1:
         # If we've seen it already in that well, then increment the count
         else:
             barcodes[well][barcode] += 1
-        #print(f"{well} {barcode}")
 
-print(barcodes["A1"])
-    
-#colnames=['fw_name','fw_pos','rev_name','rev_pos','pl_name','pl_pos']
-#df = pd.DataFrame(rows, columns=colnames)
-
-#summ=df[['fw_name', 'rev_name', 'pl_name', 'pl_pos']].groupby(['fw_name', 'rev_name', 'pl_name'], as_index=False).agg( ['count','mean'])
-
-#summ.columns = ['fw_name','rev_name','pl_name','count','mean_pos']
-
-#sample_name = args.seqfile.split('.')[0]
-#outfile = sample_name + "_results.csv"
-#summ.to_csv(outfile, sep=',', index=False)
+# Convert to dataframe and output as CSV
+sample_name = args.seqfile.split('.')[0]
+outfile = sample_name + "_barcodes.csv"
+results = pd.DataFrame.from_dict(barcodes).fillna(0).astype('int')
+#print(results)
+results.to_csv(outfile)
 
