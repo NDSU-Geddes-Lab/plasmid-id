@@ -21,6 +21,12 @@ parser.add_argument('-f', '--fw-primers',
 parser.add_argument('-r', '--rv-primers',
                     help='FASTA file with reverse primers',
                     default='RV_primers.fa')
+parser.add_argument('-5', '--left',
+                    help='5-prime (left) flanking sequnce',
+                    default='TGAACTGTACAAATGAAGGT')
+parser.add_argument('-3', '--right',
+                    help='3-prime (right) flanking sequence (GCTT + N12 experiment tag)',
+                    default='GCTTTGTATCTTCACC')
 
 args = parser.parse_args()
 
@@ -44,8 +50,8 @@ def find_barcode_and_well(seq, fwd_primers, rev_primers):
     """
     for row, fwd_seq in fwd_primers.items():
         for col, rev_seq in rev_primers.items():
-            # Read architecture: {fwd}{N33}{rev}
-            pattern = fwd_seq + "(.{33})" + rev_seq
+            # Read architecture: {fwd}{right}{N33}{left}{rev}
+            pattern = fwd_seq + args.left + "(.{33})" + args.right + rev_seq
             hit = re.search(pattern, seq)
             if hit is not None:
                 return(col+row, hit.group(1))
