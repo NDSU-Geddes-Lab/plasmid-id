@@ -27,6 +27,9 @@ parser.add_argument('-5', '--left',
 parser.add_argument('-3', '--right',
                     help='3-prime (right) flanking sequence (GCTT + N12 experiment tag)',
                     default='GCTTTGTATCTTCACC')
+parser.add_argument('-m', '--min-count',
+                    help='minimum read count (total for all wells) to report a barcode',
+                    default=500)
 
 args = parser.parse_args()
 
@@ -76,8 +79,12 @@ with gzip.open(args.seqfile, "rt") as r1:
 sample_name = args.seqfile.split('.')[0]
 outfile = sample_name + "_barcodes.csv"
 results = pd.DataFrame.from_dict(barcodes).fillna(0).astype('int')
+
+# Filter out barcodes with less than min_count reads total
+results = results[results.sum(axis=1) >= args.min_count]
+
+# Create output and report results
 n_barcodes = len(results)
-#print(results)
 results.to_csv(outfile)
 print(f"Wrote counts for {n_barcodes} unique barcodes to {outfile}")
 
