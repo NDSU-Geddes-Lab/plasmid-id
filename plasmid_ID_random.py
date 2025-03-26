@@ -29,7 +29,7 @@ parser.add_argument('-3', '--right',
                     default='GCTTTGTATCTTCACC')
 parser.add_argument('-m', '--min-count',
                     help='minimum read count (total for all wells) to report a barcode',
-                    default=0)
+                    default=500)
 
 args = parser.parse_args()
 
