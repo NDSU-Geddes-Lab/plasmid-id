@@ -32,6 +32,7 @@ parser.add_argument('-m', '--min-count',
                     default=0)
 
 args = parser.parse_args()
+min_count = int(args.min_count)
 
 # Reead in forward and reverse primer sequences
 forward_dict = SeqIO.to_dict(SeqIO.parse(args.fw_primers, "fasta"))
@@ -86,16 +87,21 @@ print(f"Processed {n_reads} reads from {args.seqfile}")
 print(f"{n_matched} reads ({pct_matched}%) matched expected read architecture")
 
 # Remove wells with less than --min-count reads
-if args.min_count > 0:
-    #Do stuff
+low_count = []
+if min_count > 0:
+    for well, bc in barcodes.items():
+        well_total = sum(bc.values())
+        if well_total < min_count:
+            low_count.append(well)
+    for well in low_count:
+        barcodes.pop(well)
+    print(f"Removed {len(low_count)} wells with less than {min_count} reads: {low_count}")
+    print(f"{len(barcodes.keys())} wells remaining")
 
 # Convert to dataframe and output as CSV
 sample_name = args.seqfile.split('.')[0]
 outfile = sample_name + "_barcodes.csv"
 results = pd.DataFrame.from_dict(barcodes).fillna(0).astype('int')
-
-# Filter out barcodes with less than min_count reads total
-results = results[results.sum(axis=1) >= args.min_count]
 
 # Create output and report results
 n_barcodes = len(results)
