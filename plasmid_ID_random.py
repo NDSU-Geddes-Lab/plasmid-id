@@ -47,11 +47,11 @@ reverse_dict = SeqIO.to_dict(SeqIO.parse(args.rv_primers, "fasta"))
 reverse_dict = {k:str(v.seq.reverse_complement()) for k, v in reverse_dict.items()}
 
 # Create a dictionary to store each identified barcode
-barcodes = {}
+plate = {}
 for col in reverse_dict.keys():
     for row in forward_dict.keys():
         well = col+row
-        barcodes[well] = {}
+        plate[well] = {}
 
 # Identify well and barcode all at once
 def find_barcode_and_well(seq, fwd_primers, rev_primers):
@@ -79,12 +79,12 @@ with gzip.open(args.seqfile, "rt") as r1:
         if well is None:
             continue
         # If we haven't seen this barcode in this well, then we set count to 1
-        elif barcode not in barcodes[well]:
-            barcodes[well][barcode] = 1
+        elif barcode not in plate[well]:
+            plate[well][barcode] = 1
             n_matched += 1
         # If we've seen it already in that well, then increment the count
         else:
-            barcodes[well][barcode] += 1
+            plate[well][barcode] += 1
             n_matched += 1
 
 # Print some basic diagnostics
@@ -96,7 +96,7 @@ print(f"{n_matched} reads ({pct_matched}%) matched expected read architecture")
 # Convert to dataframe and output as CSV
 sample_name = args.seqfile.split('.')[0]
 outfile = sample_name + ".asv_table.csv"
-results = pd.DataFrame.from_dict(barcodes).fillna(0).astype('int')
+results = pd.DataFrame.from_dict(plate).fillna(0).astype('int')
 
 # Create output and report results
 n_barcodes = len(results)
@@ -107,21 +107,18 @@ print(f"Wrote counts for {n_barcodes} unique barcodes to {outfile}")
 # Remove wells with less than --min-count reads
 low_count = []
 if min_count > 0:
-    for well, bc_dict in barcodes.items():
+    for well, bc_dict in plate.items():
         well_total = sum(bc_dict.values())
         if well_total < min_count:
             low_count.append(well)
     for well in low_count:
-        barcodes.pop(well)
+        plate.pop(well)
     print(f"Removed {len(low_count)} wells with less than {min_count} reads: {low_count}")
-    print(f"{len(barcodes.keys())} wells remaining")
+    print(f"{len(plate.keys())} wells remaining")
 
-# TODO: At this point, it might make sense to create a new dict with
-# the barcode sequences as the keys and the values being the wells
-# with count and purity information for that barcode.
-# Because we don't want the same barcode more than once in our final dictionary.
+# Remove low purity barcodes before final deduplication
 if min_purity > 0:
-    for well, bc_dict in barcodes.items():
+    for well, bc_dict in plate.items():
         low_purity = []
         well_total = sum(bc_dict.values())
         for bc, count in bc_dict.items():
@@ -130,11 +127,13 @@ if min_purity > 0:
         for bc in low_purity:
             bc_dict.pop(bc)
 
+
+
 db_file = sample_name + "_db.csv"
 db = open(db_file, "w")
 db.write("barcode,sequence\n")
 n_barcodes_final = 0
-for well, barcode in barcodes.items():
+for well, barcode in plate.items():
     if len(barcode) == 1:
         bc_name = sample_name + "." + well.lower()
         bc_seq = list(barcode.keys())[0]
