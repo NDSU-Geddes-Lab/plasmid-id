@@ -30,9 +30,13 @@ parser.add_argument('-3', '--right',
 parser.add_argument('-m', '--min-count',
                     help='minimum read count per well',
                     default=0)
+parser.add_argument('-p', '--min-purity',
+                    help='minimum relative abundance for a barcode in a well',
+                    default=0)
 
 args = parser.parse_args()
 min_count = int(args.min_count)
+min_purity = float(args.min_purity)
 
 # Reead in forward and reverse primer sequences
 forward_dict = SeqIO.to_dict(SeqIO.parse(args.fw_primers, "fasta"))
@@ -86,6 +90,18 @@ pct_matched = round((n_matched/n_reads)*100, 2)
 print(f"Processed {n_reads} reads from {args.seqfile}")
 print(f"{n_matched} reads ({pct_matched}%) matched expected read architecture")
 
+# Output entire ASV table for reference, before we start filtering anything out
+# Convert to dataframe and output as CSV
+sample_name = args.seqfile.split('.')[0]
+outfile = sample_name + ".asv_table.csv"
+results = pd.DataFrame.from_dict(barcodes).fillna(0).astype('int')
+
+# Create output and report results
+n_barcodes = len(results)
+results.to_csv(outfile)
+print(f"Wrote counts for {n_barcodes} unique barcodes to {outfile}")
+
+# Now we can proceed with creating the database
 # Remove wells with less than --min-count reads
 low_count = []
 if min_count > 0:
@@ -97,14 +113,4 @@ if min_count > 0:
         barcodes.pop(well)
     print(f"Removed {len(low_count)} wells with less than {min_count} reads: {low_count}")
     print(f"{len(barcodes.keys())} wells remaining")
-
-# Convert to dataframe and output as CSV
-sample_name = args.seqfile.split('.')[0]
-outfile = sample_name + "_barcodes.csv"
-results = pd.DataFrame.from_dict(barcodes).fillna(0).astype('int')
-
-# Create output and report results
-n_barcodes = len(results)
-results.to_csv(outfile)
-print(f"Wrote counts for {n_barcodes} unique barcodes to {outfile}")
 
