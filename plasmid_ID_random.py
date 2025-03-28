@@ -9,6 +9,7 @@ import pandas as pd
 import numpy as np
 import argparse
 import re
+import sys
 
 parser = argparse.ArgumentParser(
                     prog='plasmid_ID_random.py',
@@ -127,18 +128,24 @@ if min_purity > 0:
         for bc in low_purity:
             bc_dict.pop(bc)
 
+# Now we're done with per-well analysis, so we need to rekey on barcode sequence
+barcodes = {}
+for well, bc_dict in plate.items():
+    for bc, count in bc_dict.items():
+        if bc not in barcodes:
+            barcodes[bc] = {}
+        barcodes[bc][well] = count
 
-
+# Now iterate through barcodes and write the top count well for each to the db.csv
 db_file = sample_name + "_db.csv"
 db = open(db_file, "w")
 db.write("barcode,sequence\n")
 n_barcodes_final = 0
-for well, barcode in plate.items():
-    if len(barcode) == 1:
-        bc_name = sample_name + "." + well.lower()
-        bc_seq = list(barcode.keys())[0]
-        db.write(f"{bc_name},{bc_seq}\n")
-        n_barcodes_final += 1
+for bc_seq, well_dict in barcodes.items():
+    top_well = max(well_dict, key=well_dict.get)
+    bc_name = sample_name + "_" + top_well.lower()
+    db.write(f"{bc_name},{bc_seq}\n")
+    n_barcodes_final += 1
 
 db.close()
 print(f"Wrote {n_barcodes_final} barcodes to {db_file}")
