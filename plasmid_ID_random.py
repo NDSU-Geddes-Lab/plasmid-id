@@ -32,13 +32,15 @@ parser.add_argument('-m', '--min-count',
                     default=0)
 parser.add_argument('-p', '--min-purity',
                     help='minimum relative abundance for a barcode in a well',
-                    default=0)
+                    default=0.5) # Ensures at most 1 barcode will be kept per well
 
 args = parser.parse_args()
 min_count = int(args.min_count)
 min_purity = float(args.min_purity)
+if min_purity < 0.5:
+    print("WARNING: setting --min-purity < 0.5 may result in multiple barcodes per well in your dictionary!")
 
-# Reead in forward and reverse primer sequences
+# Read in forward and reverse primer sequences
 forward_dict = SeqIO.to_dict(SeqIO.parse(args.fw_primers, "fasta"))
 forward_dict = {k:str(v.seq) for k, v in forward_dict.items()}
 reverse_dict = SeqIO.to_dict(SeqIO.parse(args.rv_primers, "fasta"))
@@ -105,12 +107,36 @@ print(f"Wrote counts for {n_barcodes} unique barcodes to {outfile}")
 # Remove wells with less than --min-count reads
 low_count = []
 if min_count > 0:
-    for well, bc in barcodes.items():
-        well_total = sum(bc.values())
+    for well, bc_dict in barcodes.items():
+        well_total = sum(bc_dict.values())
         if well_total < min_count:
             low_count.append(well)
     for well in low_count:
         barcodes.pop(well)
     print(f"Removed {len(low_count)} wells with less than {min_count} reads: {low_count}")
     print(f"{len(barcodes.keys())} wells remaining")
+
+if min_purity > 0:
+    for well, bc_dict in barcodes.items():
+        low_purity = []
+        well_total = sum(bc_dict.values())
+        for bc, count in bc_dict.items():
+            if (count/well_total) < min_purity:
+                low_purity.append(bc)
+        for bc in low_purity:
+            bc_dict.pop(bc)
+
+db_file = sample_name + "_db.csv"
+db = open(db_file, "w")
+db.write("barcode,sequence\n")
+n_barcodes_final = 0
+for well, barcode in barcodes.items():
+    if len(barcode) == 1:
+        bc_name = sample_name + "." + well.lower()
+        bc_seq = list(barcode.keys())[0]
+        db.write(f"{bc_name},{bc_seq}\n")
+        n_barcodes_final += 1
+
+db.close()
+print(f"Wrote {n_barcodes_final} barcodes to {db_file}")
 
