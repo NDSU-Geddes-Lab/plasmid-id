@@ -116,6 +116,10 @@ if min_count > 0:
     print(f"Removed {len(low_count)} wells with less than {min_count} reads: {low_count}")
     print(f"{len(barcodes.keys())} wells remaining")
 
+# TODO: At this point, it might make sense to create a new dict with
+# the barcode sequences as the keys and the values being the wells
+# with count and purity information for that barcode.
+# Because we don't want the same barcode more than once in our final dictionary.
 if min_purity > 0:
     for well, bc_dict in barcodes.items():
         low_purity = []
