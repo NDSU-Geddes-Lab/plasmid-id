@@ -28,7 +28,7 @@ parser.add_argument('-3', '--right',
                     help='3-prime (right) flanking sequence (GCTT + N12 experiment tag)',
                     default='GCTTTGTATCTTCACC')
 parser.add_argument('-m', '--min-count',
-                    help='minimum read count (total for all wells) to report a barcode',
+                    help='minimum read count per well',
                     default=0)
 
 args = parser.parse_args()
@@ -61,8 +61,11 @@ def find_barcode_and_well(seq, fwd_primers, rev_primers):
     return(None, None)
 
 # Main loop to iterate through each fastq sequence
+n_reads = 0
+n_matched = 0
 with gzip.open(args.seqfile, "rt") as r1:
     for fw in SeqIO.parse(r1, "fastq") :
+        n_reads += 1
         str_seq = str(fw.seq)
         well, barcode = find_barcode_and_well(str_seq, forward_dict, reverse_dict)
         # If well is None, that means no barcode was found
@@ -71,9 +74,20 @@ with gzip.open(args.seqfile, "rt") as r1:
         # If we haven't seen this barcode in this well, then we set count to 1
         elif barcode not in barcodes[well]:
             barcodes[well][barcode] = 1
+            n_matched += 1
         # If we've seen it already in that well, then increment the count
         else:
             barcodes[well][barcode] += 1
+            n_matched += 1
+
+# Print some basic diagnostics
+pct_matched = round((n_matched/n_reads)*100, 2)
+print(f"Processed {n_reads} reads from {args.seqfile}")
+print(f"{n_matched} reads ({pct_matched}%) matched expected read architecture")
+
+# Remove wells with less than --min-count reads
+if args.min_count > 0:
+    #Do stuff
 
 # Convert to dataframe and output as CSV
 sample_name = args.seqfile.split('.')[0]
