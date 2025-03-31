@@ -36,7 +36,6 @@ parser.add_argument('-p', '--min-purity',
                     type=float, default=0.5) # Ensures at most 1 barcode will be kept per well
 
 args = parser.parse_args()
-min_count = args.min_count
 min_purity = args.min_purity
 if min_purity < 0.5:
     print("WARNING: setting --min-purity < 0.5 may result in multiple barcodes per well in your dictionary!")
@@ -107,32 +106,41 @@ def process_fastq(seqfile, fwd_dict, rev_dict, left, right):
 
     return(plate)
 
+def remove_low_count(plate, min_count):
+    """
+    Remove wells with less than --min-count reads.
+    """
+    low_count = []
+    if min_count > 0:
+        for well, bc_dict in plate.items():
+            well_total = sum(bc_dict.values())
+            if well_total < min_count:
+                low_count.append(well)
+        for well in low_count:
+            plate.pop(well)
+        print(f"Removed {len(low_count)} wells with less than {min_count} reads: {low_count}")
+        print(f"{len(plate.keys())} wells remaining")
+
+    return(plate)
+
+def write_asv_table(plate, outfile):
+    """
+    Write plate dictionary to ASV table in .csv format.
+    """
+    results = pd.DataFrame.from_dict(plate).fillna(0).astype('int')
+    n_barcodes = len(results)
+    results.to_csv(outfile)
+    print(f"Wrote counts for {n_barcodes} unique barcodes to {outfile}")
+
 # Create a dictionary to store each identified barcode
 plate = process_fastq(args.seqfile, forward_dict, reverse_dict, args.left, args.right)
 
 # Output entire ASV table for reference, before we start filtering anything out
-# Convert to dataframe and output as CSV
 sample_name = args.seqfile.split('.')[0]
 outfile = sample_name + ".asv_table.csv"
-results = pd.DataFrame.from_dict(plate).fillna(0).astype('int')
+write_asv_table(plate, outfile)
 
-# Create output and report results
-n_barcodes = len(results)
-results.to_csv(outfile)
-print(f"Wrote counts for {n_barcodes} unique barcodes to {outfile}")
-
-# Now we can proceed with creating the database
-# Remove wells with less than --min-count reads
-low_count = []
-if min_count > 0:
-    for well, bc_dict in plate.items():
-        well_total = sum(bc_dict.values())
-        if well_total < min_count:
-            low_count.append(well)
-    for well in low_count:
-        plate.pop(well)
-    print(f"Removed {len(low_count)} wells with less than {min_count} reads: {low_count}")
-    print(f"{len(plate.keys())} wells remaining")
+plate = remove_low_count(plate, args.min_count)
 
 # Remove low purity barcodes before final deduplication
 if min_purity > 0:
