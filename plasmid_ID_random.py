@@ -175,7 +175,6 @@ def main():
                         type=float, default=0.5) # Ensures at most 1 barcode will be kept per well
     
     args = parser.parse_args()
-    print(args)
     
     # Read in forward and reverse primer sequences
     forward_dict = SeqIO.to_dict(SeqIO.parse(args.fw_primers, "fasta"))
