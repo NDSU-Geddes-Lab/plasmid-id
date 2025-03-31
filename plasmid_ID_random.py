@@ -30,14 +30,14 @@ parser.add_argument('-3', '--right',
                     default='GCTTTGTATCTTCACC')
 parser.add_argument('-m', '--min-count',
                     help='minimum read count per well',
-                    default=0)
+                    type=int, default=0)
 parser.add_argument('-p', '--min-purity',
                     help='minimum relative abundance for a barcode in a well',
-                    default=0.5) # Ensures at most 1 barcode will be kept per well
+                    type=float, default=0.5) # Ensures at most 1 barcode will be kept per well
 
 args = parser.parse_args()
-min_count = int(args.min_count)
-min_purity = float(args.min_purity)
+min_count = args.min_count
+min_purity = args.min_purity
 if min_purity < 0.5:
     print("WARNING: setting --min-purity < 0.5 may result in multiple barcodes per well in your dictionary!")
 
