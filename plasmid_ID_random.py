@@ -49,9 +49,9 @@ reverse_dict = {k:str(v.seq.reverse_complement()) for k, v in reverse_dict.items
 
 # Create a dictionary to store each identified barcode
 plate = {}
-for col in reverse_dict.keys():
-    for row in forward_dict.keys():
-        well = col+row
+for row in reverse_dict.keys():
+    for col in forward_dict.keys():
+        well = row+col
         plate[well] = {}
 
 # Identify well and barcode all at once
