@@ -36,9 +36,6 @@ parser.add_argument('-p', '--min-purity',
                     type=float, default=0.5) # Ensures at most 1 barcode will be kept per well
 
 args = parser.parse_args()
-min_purity = args.min_purity
-if min_purity < 0.5:
-    print("WARNING: setting --min-purity < 0.5 may result in multiple barcodes per well in your dictionary!")
 
 # Read in forward and reverse primer sequences
 forward_dict = SeqIO.to_dict(SeqIO.parse(args.fw_primers, "fasta"))
@@ -123,6 +120,26 @@ def remove_low_count(plate, min_count):
 
     return(plate)
 
+def remove_low_purity(plate, min_purity):
+    """
+    Remove barcodes with relative abundance in each well
+    less than --min-purity.
+    """
+    if min_purity < 0.5:
+        print("WARNING: setting --min-purity < 0.5 may result in multiple barcodes per well in your dictionary!")
+
+    if min_purity > 0:
+        for well, bc_dict in plate.items():
+            low_purity = []
+            well_total = sum(bc_dict.values())
+            for bc, count in bc_dict.items():
+                if (count/well_total) < min_purity:
+                    low_purity.append(bc)
+            for bc in low_purity:
+                bc_dict.pop(bc)
+
+    return(plate)
+
 def write_asv_table(plate, outfile):
     """
     Write plate dictionary to ASV table in .csv format.
@@ -140,18 +157,9 @@ sample_name = args.seqfile.split('.')[0]
 outfile = sample_name + ".asv_table.csv"
 write_asv_table(plate, outfile)
 
+# Filter barcodes based on count and purity
 plate = remove_low_count(plate, args.min_count)
-
-# Remove low purity barcodes before final deduplication
-if min_purity > 0:
-    for well, bc_dict in plate.items():
-        low_purity = []
-        well_total = sum(bc_dict.values())
-        for bc, count in bc_dict.items():
-            if (count/well_total) < min_purity:
-                low_purity.append(bc)
-        for bc in low_purity:
-            bc_dict.pop(bc)
+plate = remove_low_purity(plate, args.min_purity)
 
 # Now we're done with per-well analysis, so we need to rekey on barcode sequence
 barcodes = {}
