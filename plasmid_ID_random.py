@@ -200,4 +200,5 @@ def main():
     # Write final barcodes to DB
     write_barcode_db(barcodes, sample_name)
 
-main()
+if __name__ == "__main__":
+    main()
