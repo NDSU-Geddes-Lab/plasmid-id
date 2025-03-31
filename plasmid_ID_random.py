@@ -48,7 +48,7 @@ reverse_dict = SeqIO.to_dict(SeqIO.parse(args.rv_primers, "fasta"))
 reverse_dict = {k:str(v.seq.reverse_complement()) for k, v in reverse_dict.items()}
 
 # Identify well and barcode all at once
-def find_barcode_and_well(seq, fwd_primers, rev_primers):
+def find_barcode_and_well(seq, fwd_primers, rev_primers, left, right):
     """
     Iterate through forward and reverse primer pairs
     and identify well and barcode.
@@ -56,7 +56,7 @@ def find_barcode_and_well(seq, fwd_primers, rev_primers):
     for row, fwd_seq in fwd_primers.items():
         for col, rev_seq in rev_primers.items():
             # Read architecture: {fwd}{right}{N33}{left}{rev}
-            pattern = fwd_seq + args.left + "(.{33})" + args.right + rev_seq
+            pattern = fwd_seq + left + "(.{33})" + right + rev_seq
             hit = re.search(pattern, seq)
             if hit is not None:
                 return(col+row, hit.group(1))
@@ -74,7 +74,7 @@ def make_plate():
             plate[well] = {}
     return(plate)
     
-def process_fastq(seqfile, fwd_dict, rev_dict):
+def process_fastq(seqfile, fwd_dict, rev_dict, left, right):
     """
     Iterate through each sequence in the fastq file
     and count barcodes per well, assigning counts to
@@ -87,7 +87,7 @@ def process_fastq(seqfile, fwd_dict, rev_dict):
         for fw in SeqIO.parse(fq, "fastq") :
             n_reads += 1
             str_seq = str(fw.seq)
-            well, barcode = find_barcode_and_well(str_seq, fwd_dict, rev_dict)
+            well, barcode = find_barcode_and_well(str_seq, fwd_dict, rev_dict, left, right)
             # If well is None, that means no barcode was found
             if well is None:
                 continue
@@ -108,7 +108,7 @@ def process_fastq(seqfile, fwd_dict, rev_dict):
     return(plate)
 
 # Create a dictionary to store each identified barcode
-plate = process_fastq(args.seqfile, forward_dict, reverse_dict)
+plate = process_fastq(args.seqfile, forward_dict, reverse_dict, args.left, args.right)
 
 # Output entire ASV table for reference, before we start filtering anything out
 # Convert to dataframe and output as CSV
