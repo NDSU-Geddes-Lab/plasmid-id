@@ -47,13 +47,6 @@ forward_dict = {k:str(v.seq) for k, v in forward_dict.items()}
 reverse_dict = SeqIO.to_dict(SeqIO.parse(args.rv_primers, "fasta"))
 reverse_dict = {k:str(v.seq.reverse_complement()) for k, v in reverse_dict.items()}
 
-# Create a dictionary to store each identified barcode
-plate = {}
-for row in reverse_dict.keys():
-    for col in forward_dict.keys():
-        well = row+col
-        plate[well] = {}
-
 # Identify well and barcode all at once
 def find_barcode_and_well(seq, fwd_primers, rev_primers):
     """Iterate through forward and reverse primer pairs
@@ -67,6 +60,20 @@ def find_barcode_and_well(seq, fwd_primers, rev_primers):
             if hit is not None:
                 return(col+row, hit.group(1))
     return(None, None)
+
+def make_plate():
+    """Create dictionary to match standard
+    96-well plate layout.
+    """
+    plate = {}
+    for row in reverse_dict.keys():
+        for col in forward_dict.keys():
+            well = row+col
+            plate[well] = {}
+    return(plate)
+    
+# Create a dictionary to store each identified barcode
+plate = make_plate()
 
 # Main loop to iterate through each fastq sequence
 n_reads = 0
