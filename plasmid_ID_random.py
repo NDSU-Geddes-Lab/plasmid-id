@@ -72,33 +72,37 @@ def make_plate():
             plate[well] = {}
     return(plate)
     
-# Create a dictionary to store each identified barcode
-plate = make_plate()
-
 # Main loop to iterate through each fastq sequence
-n_reads = 0
-n_matched = 0
-with gzip.open(args.seqfile, "rt") as r1:
-    for fw in SeqIO.parse(r1, "fastq") :
-        n_reads += 1
-        str_seq = str(fw.seq)
-        well, barcode = find_barcode_and_well(str_seq, forward_dict, reverse_dict)
-        # If well is None, that means no barcode was found
-        if well is None:
-            continue
-        # If we haven't seen this barcode in this well, then we set count to 1
-        elif barcode not in plate[well]:
-            plate[well][barcode] = 1
-            n_matched += 1
-        # If we've seen it already in that well, then increment the count
-        else:
-            plate[well][barcode] += 1
-            n_matched += 1
+def process_fastq(seqfile, fwd_dict, rev_dict):
+    n_reads = 0
+    n_matched = 0
+    plate = make_plate()
+    with gzip.open(seqfile, "rt") as fq:
+        for fw in SeqIO.parse(fq, "fastq") :
+            n_reads += 1
+            str_seq = str(fw.seq)
+            well, barcode = find_barcode_and_well(str_seq, fwd_dict, rev_dict)
+            # If well is None, that means no barcode was found
+            if well is None:
+                continue
+            # If we haven't seen this barcode in this well, then we set count to 1
+            elif barcode not in plate[well]:
+                plate[well][barcode] = 1
+                n_matched += 1
+            # If we've seen it already in that well, then increment the count
+            else:
+                plate[well][barcode] += 1
+                n_matched += 1
+    
+    # Print some basic diagnostics
+    pct_matched = round((n_matched/n_reads)*100, 2)
+    print(f"Processed {n_reads} reads from {args.seqfile}")
+    print(f"{n_matched} reads ({pct_matched}%) matched expected read architecture")
 
-# Print some basic diagnostics
-pct_matched = round((n_matched/n_reads)*100, 2)
-print(f"Processed {n_reads} reads from {args.seqfile}")
-print(f"{n_matched} reads ({pct_matched}%) matched expected read architecture")
+    return(plate)
+
+# Create a dictionary to store each identified barcode
+plate = process_fastq(args.seqfile, forward_dict, reverse_dict)
 
 # Output entire ASV table for reference, before we start filtering anything out
 # Convert to dataframe and output as CSV
