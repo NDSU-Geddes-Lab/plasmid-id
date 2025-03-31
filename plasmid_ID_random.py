@@ -43,7 +43,6 @@ forward_dict = {k:str(v.seq) for k, v in forward_dict.items()}
 reverse_dict = SeqIO.to_dict(SeqIO.parse(args.rv_primers, "fasta"))
 reverse_dict = {k:str(v.seq.reverse_complement()) for k, v in reverse_dict.items()}
 
-# Identify well and barcode all at once
 def find_barcode_and_well(seq, fwd_primers, rev_primers, left, right):
     """
     Iterate through forward and reverse primer pairs
@@ -103,6 +102,20 @@ def process_fastq(seqfile, fwd_dict, rev_dict, left, right):
 
     return(plate)
 
+def rekey_plate_on_barcode(plate):
+    """
+    Convert a plate dictionary (barcodes keyed on plate well)
+    to a barcode dictionary (plate wells keyed on barcode).
+    """
+    barcodes = {}
+    for well, bc_dict in plate.items():
+        for bc, count in bc_dict.items():
+            if bc not in barcodes:
+                barcodes[bc] = {}
+            barcodes[bc][well] = count
+
+    return(barcodes)
+
 def remove_low_count(plate, min_count):
     """
     Remove wells with less than --min-count reads.
@@ -140,46 +153,48 @@ def remove_low_purity(plate, min_purity):
 
     return(plate)
 
-def write_asv_table(plate, outfile):
+def write_asv_table(plate, asv_file):
     """
     Write plate dictionary to ASV table in .csv format.
     """
     results = pd.DataFrame.from_dict(plate).fillna(0).astype('int')
     n_barcodes = len(results)
-    results.to_csv(outfile)
-    print(f"Wrote counts for {n_barcodes} unique barcodes to {outfile}")
+    results.to_csv(asv_file)
+    print(f"Wrote counts for {n_barcodes} unique barcodes to {asv_file}")
+
+def write_barcode_db(barcodes, db_file):
+    """
+    Iterate through barcodes and write the 
+    top count well for each barcode to a db.csv file.
+    """
+    db = open(db_file, "w")
+    db.write("barcode,sequence\n")
+    n_barcodes_final = 0
+    for bc_seq, well_dict in barcodes.items():
+        top_well = max(well_dict, key=well_dict.get)
+        bc_name = sample_name + "_" + top_well.lower()
+        db.write(f"{bc_name},{bc_seq}\n")
+        n_barcodes_final += 1
+    
+    db.close()
+    print(f"Wrote {n_barcodes_final} barcodes to {db_file}")
 
 # Create a dictionary to store each identified barcode
 plate = process_fastq(args.seqfile, forward_dict, reverse_dict, args.left, args.right)
 
 # Output entire ASV table for reference, before we start filtering anything out
 sample_name = args.seqfile.split('.')[0]
-outfile = sample_name + ".asv_table.csv"
-write_asv_table(plate, outfile)
+asv_file = sample_name + ".asv_table.csv"
+write_asv_table(plate, asv_file)
 
 # Filter barcodes based on count and purity
 plate = remove_low_count(plate, args.min_count)
 plate = remove_low_purity(plate, args.min_purity)
 
-# Now we're done with per-well analysis, so we need to rekey on barcode sequence
-barcodes = {}
-for well, bc_dict in plate.items():
-    for bc, count in bc_dict.items():
-        if bc not in barcodes:
-            barcodes[bc] = {}
-        barcodes[bc][well] = count
+# Rekey plate dict on barcode
+barcodes = rekey_plate_on_barcode(plate)
 
-# Now iterate through barcodes and write the top count well for each to the db.csv
+# Write final barcodes to DB
 db_file = sample_name + "_db.csv"
-db = open(db_file, "w")
-db.write("barcode,sequence\n")
-n_barcodes_final = 0
-for bc_seq, well_dict in barcodes.items():
-    top_well = max(well_dict, key=well_dict.get)
-    bc_name = sample_name + "_" + top_well.lower()
-    db.write(f"{bc_name},{bc_seq}\n")
-    n_barcodes_final += 1
-
-db.close()
-print(f"Wrote {n_barcodes_final} barcodes to {db_file}")
+write_barcode_db(barcodes, db_file)
 
