@@ -49,7 +49,8 @@ reverse_dict = {k:str(v.seq.reverse_complement()) for k, v in reverse_dict.items
 
 # Identify well and barcode all at once
 def find_barcode_and_well(seq, fwd_primers, rev_primers):
-    """Iterate through forward and reverse primer pairs
+    """
+    Iterate through forward and reverse primer pairs
     and identify well and barcode.
     """
     for row, fwd_seq in fwd_primers.items():
@@ -62,7 +63,8 @@ def find_barcode_and_well(seq, fwd_primers, rev_primers):
     return(None, None)
 
 def make_plate():
-    """Create dictionary to match standard
+    """
+    Create dictionary to match standard
     96-well plate layout.
     """
     plate = {}
@@ -72,8 +74,12 @@ def make_plate():
             plate[well] = {}
     return(plate)
     
-# Main loop to iterate through each fastq sequence
 def process_fastq(seqfile, fwd_dict, rev_dict):
+    """
+    Iterate through each sequence in the fastq file
+    and count barcodes per well, assigning counts to
+    plate dictionary.
+    """
     n_reads = 0
     n_matched = 0
     plate = make_plate()
