@@ -191,8 +191,9 @@ def write_results(plate, sample_name):
 
 def main():
     parser = argparse.ArgumentParser(
-                        prog='plasmid_ID.py',
-                        description='Identify plasmid ID barcodes in sequence reads and search against barcode dictionary')
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        prog='plasmid_ID.py',
+        description='Identify plasmid ID barcodes in sequence reads and search against barcode dictionary')
     
     parser.add_argument('seqfile', help='reads.fastq.gz')
     parser.add_argument('dictionary', help='barcode_dict.csv')
