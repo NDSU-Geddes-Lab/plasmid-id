@@ -125,7 +125,7 @@ def write_asv_table(plate, sample_name):
     """
     Write plate dictionary to ASV table in .csv format.
     """
-    asv_file = sample_name + ".asv_table.csv"
+    asv_file = sample_name + "_asv_table.csv"
     results = pd.DataFrame.from_dict(plate).fillna(0).astype('int')
     n_barcodes = len(results)
     results.to_csv(asv_file)
@@ -151,8 +151,8 @@ def write_barcode_db(barcodes, sample_name):
 
 def main():
     parser = argparse.ArgumentParser(
-                        prog='plasmid_ID_random.py',
-                        description='Identify random plasmid ID barcodes in sequence reads')
+                        prog='plasmid_make_db.py',
+                        description='Identify random plasmid ID barcodes in sequence reads and create a dictionary.')
     
     parser.add_argument('seqfile', help='reads.fastq.gz')
     parser.add_argument('-f', '--fw-primers',

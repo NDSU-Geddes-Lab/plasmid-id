@@ -8,77 +8,242 @@ import itertools
 import pandas as pd
 import numpy as np
 import argparse
+import re
+import sys
 
-parser = argparse.ArgumentParser(
-                    prog='plasmid_ID.py',
-                    description='Identifies plasmid ID barcodes in sequence reads')
+def find_barcode_and_well(seq, fwd_primers, rev_primers, left, right):
+    """
+    Iterate through forward and reverse primer pairs
+    and identify well and barcode.
+    """
+    for row, fwd_seq in fwd_primers.items():
+        for col, rev_seq in rev_primers.items():
+            # Read architecture: {fwd}{right}{N33}{left}{rev}
+            pattern = fwd_seq + left + "(.{33})" + right + rev_seq
+            hit = re.search(pattern, seq)
+            if hit is not None:
+                return(col+row, hit.group(1))
+    return(None, None)
 
-parser.add_argument('seqfile', help='reads.fastq.gz')
-parser.add_argument('-b', '--barcodes',
-                    help='CSV file with barcode names and sequences',
-                    default='rcbc100.csv')
-parser.add_argument('-f', '--fw-primers',
-                    help='FASTA file with forward primers',
-                    default='FW_primers.fa')
-parser.add_argument('-r', '--rv-primers',
-                    help='FASTA file with reverse primers',
-                    default='RV_primers.fa')
-
-args = parser.parse_args()
-
-#print(args.seqfile)
-#print(args.barcodes)
-#print(args.fw_primers)
-#print(args.rv_primers)
-
-#quit()
-
-# Here we read all the sequence indeces for the forward and reverse reads
-forward_dict = SeqIO.to_dict(SeqIO.parse(args.fw_primers, "fasta"))
-forward_dict = {k:str(v.seq) for k, v in forward_dict.items()}
-reverse_dict = SeqIO.to_dict(SeqIO.parse(args.rv_primers, "fasta"))
-reverse_dict = {k:str(v.seq.reverse_complement()) for k, v in reverse_dict.items()}
-
-
-# Now, we read all the plasmid sequences
-plasmids = {}
-with open(args.barcodes, 'r') as csvfile:
-    table_reader = csv.DictReader(csvfile, delimiter=',', quotechar='"')
-    for row in table_reader:
-        plasmids[row["Barcode name"]]= row["ID plasmid sequence"]
-
-table_reader
-
-# Iterate the two sequence files and produce the table with the distances
-def find_hash_position(sequence, tags):
-    #print("________")
-    #print(sequence)
-    #print("________")
-    for key, value in tags.items():
-    #    print(value)
-        position = sequence.find(value)
-        if position != -1:
-            return (key, position)
-    return ("none", -1)
-
-rows = []
-with gzip.open(args.seqfile, "rt") as r1:
-    for fw in SeqIO.parse(r1, "fastq") :
-        str_seq = str(fw.seq)
-        fw_name, fw_pos = find_hash_position(str_seq, forward_dict)
-        rv_name, rv_pos = find_hash_position(str_seq, reverse_dict)
-        pl_name, pl_pos = find_hash_position(str_seq, plasmids)
-        tmp = (fw_name, int(fw_pos), rv_name, int(rv_pos), pl_name, int(pl_pos))
-        rows.append(tmp)
+def make_plate():
+    """
+    Create dictionary to match standard
+    96-well plate layout.
+    """
+    plate = {}
+    for row in ['A','B','C','D','E','F','G','H']:
+        for col in range(1,13):
+            well = row+str(col)
+            plate[well] = {}
+    return(plate)
     
-colnames=['fw_name','fw_pos','rev_name','rev_pos','pl_name','pl_pos']
-df = pd.DataFrame(rows, columns=colnames)
+def process_fastq(seqfile, fwd_dict, rev_dict, left, right):
+    """
+    Iterate through each sequence in the fastq file
+    and count barcodes per well, assigning counts to
+    plate dictionary.
+    """
+    n_reads = 0
+    n_matched = 0
+    plate = make_plate()
+    with gzip.open(seqfile, "rt") as fq:
+        for fw in SeqIO.parse(fq, "fastq") :
+            n_reads += 1
+            str_seq = str(fw.seq)
+            well, barcode = find_barcode_and_well(str_seq, fwd_dict, rev_dict, left, right)
+            # If well is None, that means no barcode was found
+            if well is None:
+                continue
+            # If we haven't seen this barcode in this well, then we set count to 1
+            elif barcode not in plate[well]:
+                plate[well][barcode] = 1
+                n_matched += 1
+            # If we've seen it already in that well, then increment the count
+            else:
+                plate[well][barcode] += 1
+                n_matched += 1
+    
+    # Print some basic diagnostics
+    pct_matched = round((n_matched/n_reads)*100, 2)
+    print(f"Processed {n_reads} reads from {seqfile}")
+    print(f"{n_matched} reads ({pct_matched}%) matched expected read architecture")
 
-summ=df[['fw_name', 'rev_name', 'pl_name', 'pl_pos']].groupby(['fw_name', 'rev_name', 'pl_name'], as_index=False).agg( ['count','mean'])
+    return(plate)
 
-summ.columns = ['fw_name','rev_name','pl_name','count','mean_pos']
+def read_barcode_dictionary(dictionary_file):
+    plasmids = {}
+    with open(dictionary_file, 'r') as csvfile:
+        table_reader = csv.DictReader(csvfile, delimiter=',', quotechar='"')
+        for row in table_reader:
+            plasmids[row["sequence"]]= row["barcode"]
+    csvfile.close()
+    return(plasmids)
 
-sample_name = args.seqfile.split('.')[0]
-outfile = sample_name + "_results.csv"
-summ.to_csv(outfile, sep=',', index=False)
+def rekey_plate_on_barcode(plate):
+    """
+    Convert a plate dictionary (barcodes keyed on plate well)
+    to a barcode dictionary (plate wells keyed on barcode).
+    """
+    barcodes = {}
+    for well, bc_dict in plate.items():
+        for bc, count in bc_dict.items():
+            if bc not in barcodes:
+                barcodes[bc] = {}
+            barcodes[bc][well] = count
 
+    return(barcodes)
+
+def remove_low_count(plate, min_count):
+    """
+    Remove wells with less than --min-count reads.
+    """
+    low_count = []
+    if min_count > 0:
+        for well, bc_dict in plate.items():
+            well_total = sum(bc_dict.values())
+            if well_total < min_count:
+                low_count.append(well)
+        for well in low_count:
+            plate.pop(well)
+        print(f"Removed {len(low_count)} wells with less than {min_count} reads: {low_count}")
+        print(f"{len(plate.keys())} wells remaining")
+
+    return(plate)
+
+def remove_low_purity(plate, min_purity):
+    """
+    Remove barcodes with relative abundance in each well
+    less than --min-purity.
+    """
+    if min_purity < 0.5:
+        print("WARNING: setting --min-purity < 0.5 may result in multiple barcodes per well in your dictionary!")
+
+    if min_purity > 0:
+        for well, bc_dict in plate.items():
+            low_purity = []
+            well_total = sum(bc_dict.values())
+            for bc, count in bc_dict.items():
+                if (count/well_total) < min_purity:
+                    low_purity.append(bc)
+            for bc in low_purity:
+                bc_dict.pop(bc)
+
+    return(plate)
+
+def search_barcodes(plate, dictionary):
+    """
+    Search barcodes in a plate against a barcode dictionary.
+    """
+    barcodes = {}
+    barcodes["unassigned"] = {}
+    for well, bc_dict in plate.items():
+        for bc, count in bc_dict.items():
+            if bc in dictionary:
+                bc_name = dictionary[bc]
+                if bc_name not in barcodes:
+                    barcodes[bc_name] = {}
+                barcodes[bc_name][well] = count
+            else:
+                if well not in barcodes["unassigned"]:
+                    barcodes["unassigned"][well] = 0
+                barcodes["unassigned"][well] += count
+    return(barcodes)
+
+
+def write_asv_table(plate, sample_name):
+    """
+    Write plate dictionary to ASV table in .csv format.
+    """
+    asv_file = sample_name + ".asv_table.csv"
+    results = pd.DataFrame.from_dict(plate).fillna(0).astype('int')
+    n_barcodes = len(results)
+    results.to_csv(asv_file)
+    print(f"Wrote counts for {n_barcodes} unique barcodes to {asv_file}")
+
+def write_barcode_db(barcodes, sample_name):
+    """
+    Iterate through barcodes and write the 
+    top count well for each barcode to a db.csv file.
+    """
+    db_file = sample_name + "_db.csv"
+    db = open(db_file, "w")
+    db.write("barcode,sequence\n")
+    n_barcodes_final = 0
+    for bc_seq, well_dict in barcodes.items():
+        top_well = max(well_dict, key=well_dict.get)
+        bc_name = sample_name + "_" + top_well.lower()
+        db.write(f"{bc_name},{bc_seq}\n")
+        n_barcodes_final += 1
+    
+    db.close()
+    print(f"Wrote {n_barcodes_final} barcodes to {db_file}")
+
+def write_results(plate, sample_name):
+    """
+    Write barcode search results to csv file.
+    """
+    results_file = sample_name + "_results.csv"
+    results = pd.DataFrame.from_dict(plate).fillna(0).astype('int')
+    results = results.transpose()
+    n_barcodes = len(results)
+    results.to_csv(results_file)
+    print(f"Wrote counts for {n_barcodes} matched barcodes to {results_file}")
+
+def main():
+    parser = argparse.ArgumentParser(
+                        prog='plasmid_ID.py',
+                        description='Identify plasmid ID barcodes in sequence reads and search against barcode dictionary')
+    
+    parser.add_argument('seqfile', help='reads.fastq.gz')
+    parser.add_argument('dictionary', help='barcode_dict.csv')
+    parser.add_argument('-f', '--fw-primers',
+                        help='FASTA file with forward primers',
+                        default='FW_primers.fa')
+    parser.add_argument('-r', '--rv-primers',
+                        help='FASTA file with reverse primers',
+                        default='RV_primers.fa')
+    parser.add_argument('-5', '--left',
+                        help='5-prime (left) flanking sequnce',
+                        default='TGAACTGTACAAATGAAGGT')
+    parser.add_argument('-3', '--right',
+                        help='3-prime (right) flanking sequence (GCTT + N12 experiment tag)',
+                        default='GCTTTGTATCTTCACC')
+    #parser.add_argument('-m', '--min-count',
+    #                    help='minimum read count per well',
+    #                    type=int, default=0)
+    #parser.add_argument('-p', '--min-purity',
+    #                    help='minimum relative abundance for a barcode in a well',
+    #                    type=float, default=0.5) # Ensures at most 1 barcode will be kept per well
+    
+    args = parser.parse_args()
+
+    plasmids = read_barcode_dictionary(args.dictionary)
+    #print(plasmids)
+    
+    #sys.exit()
+    # Read in forward and reverse primer sequences
+    forward_dict = SeqIO.to_dict(SeqIO.parse(args.fw_primers, "fasta"))
+    forward_dict = {k:str(v.seq) for k, v in forward_dict.items()}
+    reverse_dict = SeqIO.to_dict(SeqIO.parse(args.rv_primers, "fasta"))
+    reverse_dict = {k:str(v.seq.reverse_complement()) for k, v in reverse_dict.items()}
+
+    # Create a dictionary to store each identified barcode
+    plate = process_fastq(args.seqfile, forward_dict, reverse_dict, args.left, args.right)
+    
+    # Output entire ASV table for reference, before we start filtering anything out
+    sample_name = args.seqfile.split('.')[0]
+    #write_asv_table(plate, sample_name)
+    
+    # Filter barcodes based on count and purity
+    #plate = remove_low_count(plate, args.min_count)
+    #plate = remove_low_purity(plate, args.min_purity)
+    
+    # Rekey plate dict on barcode
+    barcodes = search_barcodes(plate, plasmids)
+    
+    # Write final barcodes to DB
+    #write_barcode_db(barcodes, sample_name)
+    write_results(barcodes, sample_name)
+
+if __name__ == "__main__":
+    main()
