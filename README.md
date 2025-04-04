@@ -2,6 +2,10 @@
 
 For identifying plasmid IDs and deconvoluting PCR1 barcodes in plasmid ID sequencing protocol.
 
+## Note
+
+This project is under active development. For the version of Plasmid ID associated with the manuscript ["Adaptation of Plasmid-ID Technology for Evaluation of N2-Fixing Effectiveness and Competitiveness for Root Nodulation in the Sinorhizobium-Medicago System"](https://www.biorxiv.org/content/10.1101/2025.03.04.641427v1.full), see the [Geddes lab Plasmid ID 2025 release](https://github.com/NDSU-Geddes-Lab/plasmid-id/releases/tag/plasmid-id_2025).
+
 ## Setup
 
 ### Install `miniforge3`
@@ -44,7 +48,54 @@ USAGE: ./merge.sh R1.fastq.gz R2.fastq.gz
 
 You will have to run the script once for each pair of reads (i.e. once per sample) and the output will be a single `<sample_name>.merged.fastq.gz` file ready for processing with the Python script.
 
-### Identifying and counting barcodes with `plasmid_ID.py`
+### 1. Identifying random barcodes in a new plasmid library and creating a barcode dictionary
+
+To create a barcode dictionary for a new plasmid ID library, use the `plasmid_make_db.py` script. Running the script with the `-h` flag will show the help menu.
+
+```bash
+./plasmid_make_db.py -h
+```
+
+```
+usage: plasmid_make_db.py [-h] [-f FW_PRIMERS] [-r RV_PRIMERS] [-5 LEFT] [-3 RIGHT] [-m MIN_COUNT] [-p MIN_PURITY]
+                          seqfile
+
+Identify random plasmid ID barcodes in sequence reads and create a dictionary.
+
+positional arguments:
+  seqfile               reads.fastq.gz
+
+options:
+  -h, --help            show this help message and exit
+  -f FW_PRIMERS, --fw-primers FW_PRIMERS
+                        FASTA file with forward primers (default: FW_primers.fa)
+  -r RV_PRIMERS, --rv-primers RV_PRIMERS
+                        FASTA file with reverse primers (default: RV_primers.fa)
+  -5 LEFT, --left LEFT  5-prime (left) flanking sequnce (default: TGAACTGTACAAATGAAGGT)
+  -3 RIGHT, --right RIGHT
+                        3-prime (right) flanking sequence (GCTT + N12 experiment tag) (default: GCTTTGTATCTTCACC)
+  -m MIN_COUNT, --min-count MIN_COUNT
+                        minimum read count per well (default: 0)
+  -p MIN_PURITY, --min-purity MIN_PURITY
+                        minimum relative abundance for a barcode in a well (default: 0.5)
+```
+
+If successful, the script will create a table of all ASVs identified in each well (`*_asv_table.csv`) and a barcode dictionary file resulting from filtering and naming the ASVs (`*_db.csv`), as well as some text output. For example:
+
+```bash
+./plasmid_make_db.py S216.merged.fastq.gz
+```
+
+```
+Processed 385483 reads from S216.merged.fastq.gz
+310394 reads (80.52%) matched expected read architecture
+Wrote counts for 1584 unique barcodes to S216_asv_table.csv
+Wrote 67 barcodes to S216_db.csv
+```
+
+Barcodes in the fincal dictionary will be named according to the well with the highest count of that barcode.
+
+### 2. Identifying and counting barcodes in a sample based on an existing dictionary
 
 The `plasmid_ID.py` script takes a single argument - the reads to analyze – and produces an output CSV file with the count of each barcode identified. Running the script with the `-h` flag will show the help menu.
 
@@ -53,28 +104,35 @@ The `plasmid_ID.py` script takes a single argument - the reads to analyze – an
 ```
 
 ```
-usage: plasmid_ID.py [-h] seqfile
+usage: plasmid_ID.py [-h] [-f FW_PRIMERS] [-r RV_PRIMERS] [-5 LEFT] [-3 RIGHT] seqfile dictionary
 
-Identifies plasmid ID barcodes in sequence reads
+Identify plasmid ID barcodes in sequence reads and search against barcode dictionary
 
 positional arguments:
-  seqfile     reads.fastq.gz
+  seqfile               reads.fastq.gz
+  dictionary            barcode_dict.csv
 
 options:
-  -h, --help  show this help message and exit
+  -h, --help            show this help message and exit
+  -f FW_PRIMERS, --fw-primers FW_PRIMERS
+                        FASTA file with forward primers (default: FW_primers.fa)
+  -r RV_PRIMERS, --rv-primers RV_PRIMERS
+                        FASTA file with reverse primers (default: RV_primers.fa)
+  -5 LEFT, --left LEFT  5-prime (left) flanking sequnce (default: TGAACTGTACAAATGAAGGT)
+  -3 RIGHT, --right RIGHT
+                        3-prime (right) flanking sequence (GCTT + N12 experiment tag) (default: GCTTTGTATCTTCACC)
 ```
 
-For example, to process a merged sequence file from the previous step:
+If successful, the script will create a results file with the count for each well of each barcode matched in the dictionary, and will produce some messages as output. For example, using the dictionary created in the previous step:
 
 ```bash
-./plasmid_ID.py sample1.merged.fastq.gz
+./plasmid_ID.py S216.merged.fastq.gz S216_db.csv
 ```
 
-If successful, the script will not produce any text output, but you should see two new files created:
-
 ```
-sample1_distances_merge.txt
-sample1_results.csv
+Processed 385483 reads from S216.merged.fastq.gz
+310394 reads (80.52%) matched expected read architecture
+Wrote counts for 68 matched barcodes to S216_results.csv
 ```
 
 ### License information
