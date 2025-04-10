@@ -26,6 +26,13 @@ Or you can create the environment using the `environment.yml` file included in t
 conda env create -n plasmid -f environment.yml
 ```
 
+### Clone this repository
+
+```bash
+git clone git@github.com:NDSU-Geddes-Lab/plasmid-id.git
+cd plasmid-id/
+```
+
 ## Running the workflow
 
 ### Activate the `conda` environment
