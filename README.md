@@ -78,7 +78,7 @@ options:
                         FASTA file with forward primers (default: FW_primers.fa)
   -r RV_PRIMERS, --rv-primers RV_PRIMERS
                         FASTA file with reverse primers (default: RV_primers.fa)
-  -5 LEFT, --left LEFT  5-prime (left) flanking sequnce (default: TGAACTGTACAAATGAAGGT)
+  -5 LEFT, --left LEFT  5-prime (left) flanking sequence (default: TGAACTGTACAAATGAAGGT)
   -3 RIGHT, --right RIGHT
                         3-prime (right) flanking sequence (GCTT + N12 experiment tag) (default: GCTTTGTATCTTCACC)
   -m MIN_COUNT, --min-count MIN_COUNT
@@ -125,7 +125,7 @@ options:
                         FASTA file with forward primers (default: FW_primers.fa)
   -r RV_PRIMERS, --rv-primers RV_PRIMERS
                         FASTA file with reverse primers (default: RV_primers.fa)
-  -5 LEFT, --left LEFT  5-prime (left) flanking sequnce (default: TGAACTGTACAAATGAAGGT)
+  -5 LEFT, --left LEFT  5-prime (left) flanking sequence (default: TGAACTGTACAAATGAAGGT)
   -3 RIGHT, --right RIGHT
                         3-prime (right) flanking sequence (GCTT + N12 experiment tag) (default: GCTTTGTATCTTCACC)
 ```

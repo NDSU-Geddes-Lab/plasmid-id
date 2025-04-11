@@ -204,7 +204,7 @@ def main():
                         help='FASTA file with reverse primers',
                         default='RV_primers.fa')
     parser.add_argument('-5', '--left',
-                        help='5-prime (left) flanking sequnce',
+                        help='5-prime (left) flanking sequence',
                         default='TGAACTGTACAAATGAAGGT')
     parser.add_argument('-3', '--right',
                         help='3-prime (right) flanking sequence (GCTT + N12 experiment tag)',
