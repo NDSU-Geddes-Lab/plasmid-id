@@ -166,7 +166,7 @@ def main():
                         help='5-prime (left) flanking sequence',
                         required=True)
     parser.add_argument('-3', '--right',
-                        help='3-prime (right) flanking sequence (GCTT + N12 experiment tag)',
+                        help='3-prime (right) flanking sequence',
                         required=True)
     parser.add_argument('-l', '--barcode-length', type=int,
                         help='length of barcode between flanking sequences',

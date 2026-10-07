@@ -207,24 +207,16 @@ def main():
                         help='5-prime (left) flanking sequence',
                         required=True)
     parser.add_argument('-3', '--right',
-                        help='3-prime (right) flanking sequence (GCTT + N12 experiment tag)',
+                        help='3-prime (right) flanking sequence',
                         required=True)
     parser.add_argument('-l', '--barcode-length', type=int,
                         help='length of barcode between flanking sequences',
                         required=True)
-    #parser.add_argument('-m', '--min-count',
-    #                    help='minimum read count per well',
-    #                    type=int, default=0)
-    #parser.add_argument('-p', '--min-purity',
-    #                    help='minimum relative abundance for a barcode in a well',
-    #                    type=float, default=0.5) # Ensures at most 1 barcode will be kept per well
     
     args = parser.parse_args()
 
     plasmids = read_barcode_dictionary(args.dictionary)
-    #print(plasmids)
     
-    #sys.exit()
     # Read in forward and reverse primer sequences
     forward_dict = SeqIO.to_dict(SeqIO.parse(args.fw_primers, "fasta"))
     forward_dict = {k:str(v.seq) for k, v in forward_dict.items()}
@@ -234,19 +226,13 @@ def main():
     # Create a dictionary to store each identified barcode
     plate = process_fastq(args.seqfile, forward_dict, reverse_dict, args.left, args.right, args.barcode_length)
     
-    # Output entire ASV table for reference, before we start filtering anything out
+    # Output entire ASV table for reference
     sample_name = args.seqfile.split('.')[0]
-    #write_asv_table(plate, sample_name)
-    
-    # Filter barcodes based on count and purity
-    #plate = remove_low_count(plate, args.min_count)
-    #plate = remove_low_purity(plate, args.min_purity)
     
     # Rekey plate dict on barcode
     barcodes = search_barcodes(plate, plasmids)
     
     # Write final barcodes to DB
-    #write_barcode_db(barcodes, sample_name)
     write_results(barcodes, sample_name)
 
 if __name__ == "__main__":
