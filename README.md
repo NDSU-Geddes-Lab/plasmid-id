@@ -4,7 +4,11 @@ For identifying plasmid IDs and deconvoluting PCR1 barcodes in plasmid ID sequen
 
 ## Note
 
-This project is under active development. For the version of Plasmid ID associated with the manuscript ["Adaptation of Plasmid-ID Technology for Evaluation of N2-Fixing Effectiveness and Competitiveness for Root Nodulation in the Sinorhizobium-Medicago System"](https://www.biorxiv.org/content/10.1101/2025.03.04.641427v1.full), see the [Geddes lab Plasmid ID 2025 release](https://github.com/NDSU-Geddes-Lab/plasmid-id/releases/tag/plasmid-id_2025).
+This project is under active development. 
+
+For the version of Plasmid ID associated with the manuscript ["Adaptation of Plasmid-ID Technology for Evaluation of N2-Fixing Effectiveness and Competitiveness for Root Nodulation in the Sinorhizobium-Medicago System"](https://www.biorxiv.org/content/10.1101/2025.03.04.641427v1.full), see the [Geddes lab Plasmid ID 2025 release](https://github.com/NDSU-Geddes-Lab/plasmid-id/releases/tag/plasmid-id_2025).
+
+Otherwise, use the [latest stable release](https://github.com/NDSU-Geddes-Lab/plasmid-id/releases/latest).
 
 ## Setup
 
