@@ -11,15 +11,15 @@ import argparse
 import re
 import sys
 
-def find_barcode_and_well(seq, fwd_primers, rev_primers, left, right):
+def find_barcode_and_well(seq, fwd_primers, rev_primers, left, right, barcode_length):
     """
     Iterate through forward and reverse primer pairs
     and identify well and barcode.
     """
     for row, fwd_seq in fwd_primers.items():
         for col, rev_seq in rev_primers.items():
-            # Read architecture: {fwd}{right}{N33}{left}{rev}
-            pattern = fwd_seq + left + "(.{33})" + right + rev_seq
+            # Read architecture: {fwd}{right}{barcode}{left}{rev}
+            pattern = fwd_seq + left + "(.{" + str(barcode_length) + "})" + right + rev_seq
             hit = re.search(pattern, seq)
             if hit is not None:
                 return(col+row, hit.group(1))
@@ -37,7 +37,7 @@ def make_plate():
             plate[well] = {}
     return(plate)
     
-def process_fastq(seqfile, fwd_dict, rev_dict, left, right):
+def process_fastq(seqfile, fwd_dict, rev_dict, left, right, barcode_length):
     """
     Iterate through each sequence in the fastq file
     and count barcodes per well, assigning counts to
@@ -50,7 +50,7 @@ def process_fastq(seqfile, fwd_dict, rev_dict, left, right):
         for fw in SeqIO.parse(fq, "fastq") :
             n_reads += 1
             str_seq = str(fw.seq)
-            well, barcode = find_barcode_and_well(str_seq, fwd_dict, rev_dict, left, right)
+            well, barcode = find_barcode_and_well(str_seq, fwd_dict, rev_dict, left, right, barcode_length)
             # If well is None, that means no barcode was found
             if well is None:
                 continue
@@ -168,6 +168,9 @@ def main():
     parser.add_argument('-3', '--right',
                         help='3-prime (right) flanking sequence (GCTT + N12 experiment tag)',
                         required=True)
+    parser.add_argument('-l', '--barcode-length', type=int,
+                        help='length of barcode between flanking sequences',
+                        required=True)
     parser.add_argument('-m', '--min-count',
                         help='minimum read count per well',
                         type=int, default=0)
@@ -184,7 +187,7 @@ def main():
     reverse_dict = {k:str(v.seq.reverse_complement()) for k, v in reverse_dict.items()}
 
     # Create a dictionary to store each identified barcode
-    plate = process_fastq(args.seqfile, forward_dict, reverse_dict, args.left, args.right)
+    plate = process_fastq(args.seqfile, forward_dict, reverse_dict, args.left, args.right, args.barcode_length)
     
     # Output entire ASV table for reference, before we start filtering anything out
     sample_name = args.seqfile.split('.')[0]
