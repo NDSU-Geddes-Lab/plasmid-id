@@ -199,16 +199,16 @@ def main():
     parser.add_argument('dictionary', help='barcode_dict.csv')
     parser.add_argument('-f', '--fw-primers',
                         help='FASTA file with forward primers',
-                        default='FW_primers.fa')
+                        required=True)
     parser.add_argument('-r', '--rv-primers',
                         help='FASTA file with reverse primers',
-                        default='RV_primers.fa')
+                        required=True)
     parser.add_argument('-5', '--left',
                         help='5-prime (left) flanking sequence',
-                        default='TGAACTGTACAAATGAAGGT')
+                        required=True)
     parser.add_argument('-3', '--right',
                         help='3-prime (right) flanking sequence (GCTT + N12 experiment tag)',
-                        default='GCTTTGTATCTTCACC')
+                        required=True)
     #parser.add_argument('-m', '--min-count',
     #                    help='minimum read count per well',
     #                    type=int, default=0)
